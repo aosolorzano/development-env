@@ -1,0 +1,7 @@
+<network ipv6="no">
+  <name>IdentityNetwork</name>
+  <bridge name="virbr100" />
+  <forward mode="nat" dev="enp10s0" />
+  <ip address="172.16.76.1" netmask="255.255.255.240" />
+  <route address="172.16.76.0" prefix="28" gateway="172.16.76.1" />
+</network>
