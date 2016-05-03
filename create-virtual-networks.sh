@@ -1,7 +1,7 @@
 #!/bin/bash
 # This script creates all libvirt network for all Hiperium Services
-
-virsh net-define /root/development-env/hiperium-identity/network.xml
-virsh net-autostart IdentityNetwork
-virsh net-start IdentityNetwork
-echo "Virtual Network created OK."
+set -e
+sudo virsh net-define hiperium-identity/network.xml
+sudo virsh net-autostart HiperiumIdentity
+sudo virsh net-start HiperiumIdentity
+echo "Virtual Networks created OK."

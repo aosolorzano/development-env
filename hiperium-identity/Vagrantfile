@@ -13,11 +13,7 @@
 Vagrant.configure("2") do |config|
     # Every Vagrant development environment requires a box. You can search for
     # boxes at https://atlas.hashicorp.com/search.
-    config.vm.box = "CentOS7-1603_01"
-
-    # You have to setup username for ssh access 
-    config.ssh.shell = "bash -c 'BASH_ENV=/etc/profile exec bash'"		## vagrant issues #1673..fixes hang with configure_networks
-    config.vm.synced_folder ".", "/vagrant", id: "vagrant-root", disabled: true	## Disable sharing folders
+    config.vm.box = "centos/7"
 
     # Provider-specific configuration
     config.vm.provider :libvirt do |libvirt|
@@ -27,50 +23,41 @@ Vagrant.configure("2") do |config|
         libvirt.storage_pool_name = "default"
     end
 
+    # General machine definition
+    config.vm.provider :libvirt do |domain|
+        domain.memory = 2048
+        domain.cpus = 2
+        domain.autostart = true
+    end
+
     # Machine-specific definition
-    config.vm.define :vm0 do |vm0|
-        vm0.vm.network :private_network, 
-      	    :ip => "172.16.76.2",
-            :libvirt__host_ip => "172.16.76.71",
+    config.vm.define :d1Balancer do |vmconfig|
+        vmconfig.vm.hostname = "d1Balancer"
+        vmconfig.vm.network :private_network, 
+      	    :ip => "192.168.100.66",
+            :libvirt__host_ip => "192.168.100.65",
       	    :libvirt__netmask => "255.255.255.240",
-            :libvirt__network_name => "IdentityNetwork"
-    	vm0.vm.provider :libvirt do |domain|
-    	    domain.memory = 2048
-      	    domain.cpus = 1
-            domain.autostart = true
-        end
-	#vm0.vm.network "forwarded_port", guest: 80, host: 81
-	#vm0.vm.provision :shell, path: "bootstrap-vm0.sh", keep_color: true	
+            :libvirt__network_name => "HiperiumIdentity"
+	vmconfig.vm.network :forwarded_port, host: 8081, guest: 80			# This is the HTTPD load balancer VM for this domain
+   	vmconfig.vm.network :forwarded_port, host: 10122, guest: 22, id: "ssh"		# This avoid SSH overlaping port in the host 
+	#vmconfig.vm.provision :shell, path: "bootstrap.sh", keep_color: true	
     end 
 
     # Machine-specific definition
-    config.vm.define :vm1 do |vm1|
-        vm1.vm.network :private_network,
-            :ip => "172.16.76.3",
-            :libvirt__host_ip => "172.16.76.71",
-            :libvirt__netmask => "255.255.255.240",
-            :libvirt__network_name => "IdentityNetwork"
-        vm1.vm.provider :libvirt do |domain|
-            domain.memory = 2048
-            domain.cpus = 1
-            domain.autostart = true
+    (1..2).each do |i|
+	config.vm.define "d1Node#{i}" do |vmconfig|
+            vmconfig.vm.hostname = "d1Node#{i}"
+            vmconfig.vm.network :private_network, 
+		:ip => "192.168.100.#{66+i}",
+		:libvirt__host_ip => "192.168.100.65",
+      	    	:libvirt__netmask => "255.255.255.240",
+            	:libvirt__network_name => "HiperiumIdentity"
+            vmconfig.vm.network :forwarded_port, host: "1012#{2+i}", guest: 22, id: "ssh"  # This avoid SSH overlaping port in the host
         end
     end
 
-
-    # Enable provisioning with a shell script
-    config.vm.provision "shell", inline: <<-SHELL
-        echo "UPDATING OPERATING SYSTEM"
-        sudo yum install -y epel-release
-        sudo yum update -y
-    	echo "INSTALLING DOCKER..."
-        #curl -sSL https://get.docker.com/ | sh
-        sudo yum install -y docker
-    	#sudo usermod -aG docker vagrant         	## add vagrant user to docker group
-    	sudo systemctl start docker.service
-	sudo systemctl enable docker.service
-    	echo "RUNNING DOCKER TEST..."
-    	docker run hello-world                   	## verify that docker-engine is installed correctly
-    SHELL
-
+    # Put the VM Box in Vagrant Cache for future references
+    if Vagrant.has_plugin?("vagrant-cachier")
+    	config.cache.scope = :box
+    end
 end
