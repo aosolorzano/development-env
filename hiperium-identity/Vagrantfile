@@ -6,57 +6,64 @@
 # # to use the same keypair for all the machines is to disable
 # # this feature and rely on the legacy insecure key.
 # # config.ssh.insert_key = false
-# # 
-# # vagrant-libvirt needs to run in series (not in parallel) to avoid
-# # trying to create the network twice... eg: vagrant up --no-parallel
-# # alternatively, you can just create the vm's one at a time manually.
 Vagrant.configure("2") do |config|
+
     # Every Vagrant development environment requires a box. You can search for
     # boxes at https://atlas.hashicorp.com/search.
-    config.vm.box = "centos/7"
+    config.vm.box = "ubuntu/trusty64"
 
-    # Provider-specific configuration
-    config.vm.provider :libvirt do |libvirt|
-        libvirt.driver = "qemu"
-        libvirt.connect_via_ssh = false
-        libvirt.username = "root"
-        libvirt.storage_pool_name = "default"
+    # Synced folder configuration 
+    if (/cygwin|mswin|mingw|bccwin|wince|emx/ =~ RUBY_PLATFORM) != nil
+        config.vm.synced_folder ".", "/vagrant", mount_options: ["dmode=700,fmode=600"]
+    else
+        config.vm.synced_folder ".", "/vagrant"
     end
 
-    # General machine definition
-    config.vm.provider :libvirt do |domain|
-        domain.memory = 2048
-        domain.cpus = 2
-        domain.autostart = true
+    # Common domain configuration
+    config.vm.provider "virtualbox" do |domain|
+	domain.customize ["modifyvm", :id, "--nic2", "hostonly"]
+        domain.customize ["modifyvm", :id, "--hostonlyadapter2", "vboxnet1"]
     end
 
-    # Machine-specific definition
-    config.vm.define :d1Balancer do |vmconfig|
-        vmconfig.vm.hostname = "d1Balancer"
-        vmconfig.vm.network :private_network, 
-      	    :ip => "192.168.100.66",
-            :libvirt__host_ip => "192.168.100.65",
-      	    :libvirt__netmask => "255.255.255.240",
-            :libvirt__network_name => "HiperiumIdentity"
-	vmconfig.vm.network :forwarded_port, host: 8081, guest: 80			# This is the HTTPD load balancer VM for this domain
-   	vmconfig.vm.network :forwarded_port, host: 10122, guest: 22, id: "ssh"		# This avoid SSH overlaping port in the host 
-	#vmconfig.vm.provision :shell, path: "bootstrap.sh", keep_color: true	
-    end 
-
-    # Machine-specific definition
-    (1..2).each do |i|
-	config.vm.define "d1Node#{i}" do |vmconfig|
-            vmconfig.vm.hostname = "d1Node#{i}"
-            vmconfig.vm.network :private_network, 
-		:ip => "192.168.100.#{66+i}",
-		:libvirt__host_ip => "192.168.100.65",
-      	    	:libvirt__netmask => "255.255.255.240",
-            	:libvirt__network_name => "HiperiumIdentity"
-            vmconfig.vm.network :forwarded_port, host: "1012#{2+i}", guest: 22, id: "ssh"  # This avoid SSH overlaping port in the host
+    # Machine-nodes specific definition
+    config.vm.define "identity-node1" do |vmconfig|
+      	vmconfig.vm.hostname = "identity-node1"
+        vmconfig.vm.network :private_network, ip: "172.16.76.2", netmask: "28"
+        vmconfig.vm.network :forwarded_port, host: "8181", guest: 8080 		 # Forward to Wildfly application port
+        vmconfig.vm.network :forwarded_port, host: "10123", guest: 22, id: "ssh" # This avoid SSH overlaping port in the host
+        vmconfig.vm.provider "virtualbox" do |vbox|
+            vbox.customize ["modifyvm", :id, "--memory", "2048"]
+            vbox.customize ["modifyvm", :id, "--name"  , "identity-node1"]
         end
+        vmconfig.vm.provision "shell", privileged: false, inline: <<-SHELL
+	    echo "Installing Open JDK 8 ..."
+	    sudo echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | sudo debconf-set-selections
+	    sudo add-apt-repository -y ppa:webupd8team/java
+	    sudo apt-get update
+	    sudo apt-get install -y oracle-java8-installer
+	    sudo rm -rf /var/cache/oracle-jdk8-installer
+	    export JAVA_HOME="/usr/lib/jvm/java-8-oracle"
+
+	    echo "Downloading Wildfly App Server 10.0.0.Final ..."
+	    export WILDFLY_VERSION="10.0.0.Final"
+	    curl https://download.jboss.org/wildfly/$WILDFLY_VERSION/wildfly-$WILDFLY_VERSION.tar.gz | tar -xz
+	    sudo mkdir /opt/jboss/
+	    export JBOSS_HOME="/opt/jboss/wildfly"
+	    sudo mv wildfly-$WILDFLY_VERSION $JBOSS_HOME
+	    sudo chown -R vagrant:vagrant $JBOSS_HOME
+	    cp -f /vagrant/nodes-config/standalone-ha.xml $JBOSS_HOME/standalone/configuration/
+            cp -r /vagrant/nodes-config/postgresql $JBOSS_HOME/modules/system/layers/base/org/
+	    sed -i "s|jboss.bind.address.management:127.0.0.1|jboss.bind.address.management:172.16.76.2|g" $JBOSS_HOME/standalone/configuration/standalone-ha.xml
+	    sed -i "s|jboss.bind.address:127.0.0.1|jboss.bind.address:172.16.76.2|g" $JBOSS_HOME/standalone/configuration/standalone-ha.xml
+	    sed -i "s|jboss.bind.address.private:127.0.0.1|jboss.bind.address.private:172.16.76.2|g" $JBOSS_HOME/standalone/configuration/standalone-ha.xml
+
+	    echo "Deploying Hiperium Identity Service ..."
+	    cp -f /vagrant/nodes-config/hiperium-identity.war $JBOSS_HOME/standalone/deployments/
+	    $JBOSS_HOME/bin/standalone.sh --server-config=standalone-ha.xml -b=0.0.0.0 -bmanagement=172.16.76.2 -Djboss.node.name=identity-node1
+        SHELL
     end
 
-    # Put the VM Box in Vagrant Cache for future references
+    # Put the VM in Vagrant Cache
     if Vagrant.has_plugin?("vagrant-cachier")
     	config.cache.scope = :box
     end
