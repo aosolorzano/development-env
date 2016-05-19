@@ -1,0 +1,10 @@
+## Batch file to configure the standalone server for the cluster-mdb quickstart.
+
+# -- Enable clustering, and set a cluster password
+/subsystem=messaging-activemq/server=default:write-attribute(name=cluster-password, value=password)
+
+# -- Deploy the jboss-helloworld-mdb.war file
+deploy /vagrant/nodes-config/hiperium-messaging.war
+
+# Reload the server
+:reload
