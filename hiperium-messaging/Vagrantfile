@@ -49,8 +49,8 @@ Vagrant.configure("2") do |config|
 	    curl https://download.jboss.org/wildfly/$WILDFLY_VERSION/wildfly-$WILDFLY_VERSION.tar.gz | tar -xz
 	    export JBOSS_HOME="/opt/wildfly"
 	    sudo mv wildfly-$WILDFLY_VERSION $JBOSS_HOME
-	    $JBOSS_HOME/bin/add-user.sh admin Admin123 --silent
 	    sudo cp -f /vagrant/nodes-config/standalone-full-ha.xml $JBOSS_HOME/standalone/configuration/
+	    sudo $JBOSS_HOME/bin/add-user.sh admin Admin123 --silent
 	    sudo sed -i "s|jboss.bind.address.management:127.0.0.1|jboss.bind.address.management:172.16.76.50|g" $JBOSS_HOME/standalone/configuration/standalone-full-ha.xml
 	    sudo sed -i "s|jboss.bind.address:127.0.0.1|jboss.bind.address:172.16.76.50|g" $JBOSS_HOME/standalone/configuration/standalone-full-ha.xml
 	    sudo sed -i "s|jboss.bind.address.private:127.0.0.1|jboss.bind.address.private:172.16.76.50|g" $JBOSS_HOME/standalone/configuration/standalone-full-ha.xml
@@ -64,7 +64,8 @@ Vagrant.configure("2") do |config|
 
 	    echo "Configuring and Deploying Hiperium Messaging Service"
 	    sudo -u wildfly bash -c '/opt/wildfly/bin/jboss-cli.sh --connect controller=172.16.76.50:9990 --file=/vagrant/nodes-config/configure-jms.cli'
-	    sudo -u wildfly bash -c '/opt/wildfly/bin/jboss-cli.sh --connect controller=172.16.76.50:9990 --file=/vagrant/nodes-config/install-standalone.cli'	    
+	    sudo -u wildfly bash -c '/opt/wildfly/bin/jboss-cli.sh --connect controller=172.16.76.50:9990 --file=/vagrant/nodes-config/install-standalone.cli'
+	    sudo -u wildfly bash -c 'cp -f /vagrant/nodes-config/hiperium-messaging.war /opt/wildfly/standalone/deployments/'
         SHELL
     end
 

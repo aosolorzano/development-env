@@ -1,6 +1,0 @@
-<network ipv6="no">
-  <name>HiperiumIdentity</name>
-  <bridge name="virbr100" />
-  <forward mode="nat" />
-  <ip address="192.168.100.65" netmask="255.255.255.240" />
-</network>
