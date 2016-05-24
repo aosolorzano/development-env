@@ -1,7 +1,6 @@
 #!/bin/bash
-# Deploy all virtual machines and the entire environment.
+# Deploy the entire environment with S.O. configurations.
 set -e
 ./install-vagrant.sh
-./install-ansible.sh
 ./create-virtual-networks.sh
-./create-virtual-machines.sh
+./deploy-domains.sh
