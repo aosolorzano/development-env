@@ -54,6 +54,7 @@ Vagrant.configure("2") do |config|
             sudo cp -r /vagrant/nodes-config/postgresql $JBOSS_HOME/modules/system/layers/base/org/
 	    sudo cp -f /vagrant/nodes-config/wildfly.conf /etc/default/wildfly
 	    sudo cp -f /vagrant/nodes-config/wildfly-init-debian.sh /etc/init.d/wildfly
+	    sudo cp -f /vagrant/nodes-config/wildfly-upstart.conf /etc/init/
 	    sudo cp -f /vagrant/nodes-config/hiperium-control.war $JBOSS_HOME/standalone/deployments/
 	    sudo useradd -r -s /bin/false wildfly
 	    sudo chown -R wildfly:wildfly $JBOSS_HOME

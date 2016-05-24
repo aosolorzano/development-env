@@ -57,6 +57,7 @@ Vagrant.configure("2") do |config|
 	    sudo sed -i "s|jboss.bind.address.private:127.0.0.1|jboss.bind.address.private:172.16.76.2|g" $JBOSS_HOME/standalone/configuration/standalone-ha.xml
 	    sudo cp -f /vagrant/nodes-config/wildfly.conf /etc/default/wildfly
 	    sudo cp -f /vagrant/nodes-config/wildfly-init-debian.sh /etc/init.d/wildfly
+	    sudo cp -f /vagrant/nodes-config/wildfly-upstart.conf /etc/init/
 	    sudo cp -f /vagrant/nodes-config/hiperium-identity.war $JBOSS_HOME/standalone/deployments/
 	    sudo useradd -r -s /bin/false wildfly
 	    sudo chown -R wildfly:wildfly $JBOSS_HOME
