@@ -1,0 +1,7 @@
+hosts: [
+    { host_ip: "172.16.76.2", host_name: "dev-identity-node1" }
+]
+
+obsolete_services:
+  - puppet
+  - chef-client

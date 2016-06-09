@@ -26,14 +26,14 @@ Vagrant.configure("2") do |config|
     end
 
     # Machine-nodes specific definition
-    config.vm.define "messaging-node1" do |vmconfig|
-      	vmconfig.vm.hostname = "messaging-node1"
+    config.vm.define "dev-messaging-node1" do |vmconfig|
+      	vmconfig.vm.hostname = "dev-messaging-node1"
         vmconfig.vm.network :private_network, ip: "172.16.76.50", netmask: "28"
         vmconfig.vm.network :forwarded_port, host: "8184", guest: 8080 		 # Forward to Wildfly application port
         vmconfig.vm.network :forwarded_port, host: "10423", guest: 22, id: "ssh" # This avoid SSH overlaping port in the host
         vmconfig.vm.provider "virtualbox" do |vbox|
             vbox.customize ["modifyvm", :id, "--memory", "2048"]
-            vbox.customize ["modifyvm", :id, "--name"  , "messaging-node1"]
+            vbox.customize ["modifyvm", :id, "--name"  , "dev-messaging-node1"]
         end
         vmconfig.vm.provision "shell", privileged: false, inline: <<-SHELL
 	    echo "Installing Open JDK 8 ..."

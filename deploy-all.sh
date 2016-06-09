@@ -3,4 +3,5 @@
 set -e
 ./install-vagrant.sh
 ./create-virtual-networks.sh
+./destroy-domains.sh
 ./deploy-domains.sh
