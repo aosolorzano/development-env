@@ -26,41 +26,25 @@ Vagrant.configure("2") do |config|
     end
 
     # Machine-nodes specific definition
-    config.vm.define "dev_device-node1" do |vmconfig|
-      	vmconfig.vm.hostname = "dev_device-node1"
+    config.vm.define "dev-device-node1" do |vmconfig|
+      	vmconfig.vm.hostname = "dev-device-node1"
         vmconfig.vm.network :private_network, ip: "172.16.76.18", netmask: "28"
         vmconfig.vm.network :forwarded_port, host: "8182", guest: 8080 		 # Forward to Wildfly application port
+        vmconfig.vm.network :forwarded_port, host: "9992", guest: 9990
         vmconfig.vm.network :forwarded_port, host: "10223", guest: 22, id: "ssh" # This avoid SSH overlaping port in the host
         vmconfig.vm.provider "virtualbox" do |vbox|
             vbox.customize ["modifyvm", :id, "--memory", "2048"]
-            vbox.customize ["modifyvm", :id, "--name"  , "dev_device-node1"]
+            vbox.customize ["modifyvm", :id, "--name"  , "dev-device-node1"]
         end
-        vmconfig.vm.provision "shell", privileged: false, inline: <<-SHELL
-	    echo "Installing Open JDK 8 ..."
-	    sudo echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | sudo debconf-set-selections
-	    sudo add-apt-repository -y ppa:webupd8team/java
-	    sudo apt-get update
-	    sudo apt-get install -y oracle-java8-installer
-	    sudo rm -rf /var/cache/oracle-jdk8-installer
-	    export JAVA_HOME="/usr/lib/jvm/java-8-oracle"
-
-	    echo "Downloading and configuring Wildfly App Server 10.0.0.Final ..."
-	    export WILDFLY_VERSION="10.0.0.Final"
-	    curl https://download.jboss.org/wildfly/$WILDFLY_VERSION/wildfly-$WILDFLY_VERSION.tar.gz | tar -xz
-	    export JBOSS_HOME="/opt/wildfly"
-	    sudo mv wildfly-$WILDFLY_VERSION $JBOSS_HOME
-	    sudo $JBOSS_HOME/bin/add-user.sh admin Admin123 --silent
-	    sudo cp -f /vagrant/nodes-config/standalone.xml $JBOSS_HOME/standalone/configuration/
-            sudo cp -r /vagrant/nodes-config/postgresql $JBOSS_HOME/modules/system/layers/base/org/
-	    sudo cp -f /vagrant/nodes-config/wildfly.conf /etc/default/wildfly
-	    sudo cp -f /vagrant/nodes-config/wildfly-init-debian.sh /etc/init.d/wildfly
-	    sudo cp -f /vagrant/nodes-config/wildfly-upstart.conf /etc/init/
-	    sudo cp -f /vagrant/nodes-config/hiperium-device.war $JBOSS_HOME/standalone/deployments/
-	    sudo useradd -r -s /bin/false wildfly
-	    sudo chown -R wildfly:wildfly $JBOSS_HOME
-
-	    echo "Deploying Hiperium Control Service ..."
-	    sudo service wildfly start
+	vmconfig.vm.provision "shell", path: "bootstrap.sh"                      # Install Ansible via shell provisioning
+        vmconfig.vm.provision "shell", inline: <<-SHELL
+	    echo "Running Ansible Playbook ..."
+            PYTHONUNBUFFERED=1 ansible-playbook /vagrant/ansible/standalone.yml -c local
+            echo "Building and running Docker image ..."
+	    docker --version
+            cd /vagrant/hiperium-device-docker/
+            docker build -t aosolorzano/hiperium-device:v1 .
+            docker run -itd -p 8080:8080 -p 9990:9990 aosolorzano/hiperium-device:v1 /opt/jboss/wildfly/bin/standalone.sh -b 0.0.0.0 -bmanagement 0.0.0.0
         SHELL
     end
 
