@@ -1,0 +1,7 @@
+hosts: [
+    { host_ip: "172.16.76.34", host_name: "dev-logging-node1" }
+]
+
+obsolete_services:
+  - puppet
+  - chef-client

@@ -8,5 +8,5 @@ vagrant up --provider=virtualbox --provision --no-parallel
 cd ../hiperium-logging/
 vagrant up --provider=virtualbox --provision --no-parallel
 cd ../hiperium-messaging/
-vagrant up --provider=virtualbox --provision --no-parallel
+./deploy.sh
 echo "Deployed all Hiperium Project Domains."
