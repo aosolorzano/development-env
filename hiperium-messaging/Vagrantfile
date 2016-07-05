@@ -42,9 +42,8 @@ Vagrant.configure("2") do |config|
             PYTHONUNBUFFERED=1 ansible-playbook /vagrant/ansible/standalone.yml -c local
             echo "Building and running Docker image ..."
 	    docker --version
-            cd /vagrant/hiperium-messaging-docker/
-            docker build -t aosolorzano/hiperium-messaging:v1 .
-            docker run --name hiperium-messaging -itd -p 8080:8080 -p 9990:9990 aosolorzano/hiperium-messaging:v1 /opt/jboss/wildfly/bin/standalone.sh -c standalone-full-ha.xml -b 0.0.0.0 -bmanagement 0.0.0.0 -Djboss.node.name=messaging-node1
+            docker pull hiperium/hiperium-messaging:v1
+            docker run --name hiperium-messaging -itd -p 8080:8080 -p 9990:9990 hiperium/hiperium-messaging:v1 /opt/jboss/wildfly/bin/standalone.sh -c standalone-full-ha.xml -b 0.0.0.0 -bmanagement 0.0.0.0 -Djboss.node.name=messaging-node1
         SHELL
     end
 
