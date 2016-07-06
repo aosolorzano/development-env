@@ -29,9 +29,9 @@ Vagrant.configure("2") do |config|
     config.vm.define "dev-device-node1" do |vmconfig|
       	vmconfig.vm.hostname = "dev-device-node1"
         vmconfig.vm.network :private_network, ip: "172.16.76.18", netmask: "28"
-        vmconfig.vm.network :forwarded_port, host: "8182", guest: 8080 		 # Forward to Wildfly application port
-        vmconfig.vm.network :forwarded_port, host: "9992", guest: 9990
-        vmconfig.vm.network :forwarded_port, host: "10223", guest: 22, id: "ssh" # This avoid SSH overlaping port in the host
+        vmconfig.vm.network :forwarded_port, host: "8182",  guest: 8080          # Forward to Wildfly application port
+        vmconfig.vm.network :forwarded_port, host: "9992",  guest: 9990
+        vmconfig.vm.network :forwarded_port, host: "10222", guest: 22, id: "ssh" # This avoid SSH overlaping port in the host
         vmconfig.vm.provider "virtualbox" do |vbox|
             vbox.customize ["modifyvm", :id, "--memory", "2048"]
             vbox.customize ["modifyvm", :id, "--name"  , "dev-device-node1"]
